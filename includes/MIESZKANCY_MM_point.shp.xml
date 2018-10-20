@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="pl"><Esri><CreaDate>20181015</CreaDate><CreaTime>19241800</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><lineage><Process ToolSource="c:\program files (x86)\arcgis\desktop10.5\ArcToolbox\Toolboxes\Data Management Tools.tbx\CalculateField" Date="20181015" Time="192418">CalculateField MIESZKANCY_MM_point ENGAGEMENT randnum() PYTHON_9.3 "import random\ndef randnum():\n    return random.random()"</Process></lineage></DataProperties></Esri></metadata>
