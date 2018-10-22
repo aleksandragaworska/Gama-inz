@@ -10,7 +10,7 @@ model grywalizacja
 /* Insert your model definition here */
 
 global {
-	float step <- 1 # mn;
+	float step <- 90 # mn;
 	
 	file shp_agents <- file ("../includes/MIESZKANCY_MM_point.shp");
 	file shp_objects <- file ("../includes/OBIEKTY_region.shp");
@@ -41,6 +41,8 @@ global {
 	int maxFreeTimeStart <- 19;
 	int minFreeTimeEnd <- 21;
 	int maxFreeTimeEnd <- 23;
+	float maxSpeed <- 30 #km/#h;
+	float minSpeed <- 5 #km/#h;
 	
 	
 
@@ -49,21 +51,50 @@ global {
 		theGraph <- as_edge_graph(road);
 		
 		create district from: shp_districts with: [name::string(read("NAZWA"))] {
-			
+			distColor <- rgb(255, 102, 102); //malinowy
 		}
 		
 		create object from: shp_objects with: [type::string(read("TYP")), needs::bool(read("POTRZEBA")), prize_num::float(read("NAGRODA"))
 		]{
 //			list<object> withNeeds <-  (type, prize) where needs;
+			
+			if (type = "niska zabudowa") {
+				objColor <- rgb(0, 51, 102); //ciemnoniebieski
+			}
+			else if (type = "blokowisko") {
+				objColor <- rgb(128, 128, 128); //szary
+			}
+			else if (type = "biurowiec") {
+				objColor <- rgb(153, 51, 255);//fioletowy
+			}
+			else if (type = "bulwary") {
+				objColor <- rgb(153, 255, 153); //błękitny
+			}
+			else if (type = "park") {
+				objColor <- rgb(0, 255, 0); //zielony
+			}
+			else if (type = "fabryka") {
+				objColor <- rgb(0, 0, 0); //czarny
+			}
+			else if (type = "zabytek") {
+				objColor <- rgb(255, 0, 0); //czerwony
+			}
+			else if (type = "rzeka") {
+				objColor <- rgb(0, 0, 255); //niebieski
+			}
+			else if (type = "przychodnia" or type = "szkola" or type = "urzad") {
+				objColor <- rgb(51, 102, 0); //ciemnozielony
+			}
+			
 			height <- 20 + rnd(200);
 			
-			if (prize_num > 0 and prize_num < 0.25) {
+			if (prize_num > 0.1 and prize_num < 0.25) {
 				prize <- "bilety_komunikacyjne";
 			} else if (prize_num < 0.5) {
 				prize <- "bilety_do_kina";
 			} else if (prize_num < 0.75) {
 				prize <- "kolejka_lekarz";
-			} else {
+			} else if (prize_num >= 0.75){
 				prize <- "szybciej_przedszkole";
 			}
 			
@@ -76,6 +107,7 @@ global {
 		list<object> surgeries <- object where (each.type = "przychodnia");
 		list<object> cultural_centers <- object where (each.type = "park" or each.type = "bulwary" or each.type = "zabytek");
 		list<object> departments <- object where (each.type = "urzad");
+		list<object> schools <- object where (each.type = "szkola");
 
 		/* tworzenie agentów */
 		create person from: shp_agents with: [id::int(read("ID")), age::float(read("AGE")), altruism::float(read("ALTRUISM")), 
@@ -88,6 +120,8 @@ global {
 			endWork <- minWorkEnd + rnd((maxWorkEnd - minWorkEnd) * 60) / 60;
 			startFreeTime <- minFreeTimeStart + rnd((maxFreeTimeStart - minFreeTimeStart) * 60) / 60;
 			endFreeTime <- minFreeTimeEnd + rnd((maxFreeTimeEnd - minFreeTimeEnd) * 60) / 60;
+			
+			speed <- minSpeed + rnd(maxSpeed - minSpeed) #km/#h;
 			
 			living <- flip(blockers) ? one_of(blocks) : one_of(flats);
 			working <- flip(workers) ? one_of(factories) : one_of(offices);
@@ -109,7 +143,7 @@ global {
 							if (self.prize = "szybciej_przedszkole") {
 								myself.engagement <- myself.engagement + changeEngagementsMax;
 							}
-							else if (self.prize_num > 0) {
+							else if (self.prize_num > 0.1) {
 								myself.engagement <- myself.engagement + changeEngagementsAvg;
 							}
 				
@@ -118,12 +152,12 @@ global {
 							if (self.prize = "kolejka_lekarz") {
 								myself.engagement <- myself.engagement + changeEngagementsMax;
 							}
-							else if (self.prize_num > 0) {
+							else if (self.prize_num > 0.1) {
 								myself.engagement <- myself.engagement + changeEngagementsAvg;
 							}
 						
 						}
-						else if (self.prize_num > 0) {
+						else if (self.prize_num > 0.1) {
 							myself.engagement <- myself.engagement + changeEngagementsMin;
 						}
 					}
@@ -136,15 +170,16 @@ global {
 }
 
 species road {
-	aspect {
+	aspect base {
 		draw shape color: #blue;
 	}
 }
 
 species district {
-	string name;
-	aspect {
-		draw shape color: #green;
+//	string name;
+	rgb distColor;
+	aspect base {
+		draw shape color: distColor;
 	}
 }
 
@@ -154,9 +189,10 @@ species object {
 	float prize_num;
 	string prize;
 	int height;
+	rgb objColor;
 //	list withNeeds;
-	aspect {
-		draw shape color: #red;
+	aspect base {
+		draw shape color: objColor;
 	}
 }
 
@@ -177,6 +213,7 @@ species person skills: [moving] {
 	float endWork;
 	float startFreeTime;
 	float endFreeTime;
+	float speed;
 	point myTarget;
 	
 	object living;
@@ -184,10 +221,14 @@ species person skills: [moving] {
 	district myDistrict;
 	object playing;
 	
+	aspect base {
+		draw circle(10) color: #yellow;
+	}
+	
 	list<object> objectInNeighbour update: object at_distance maxDistance;
 	object currentPlace update: object closest_to(location);
 	
-	reflex home_work when: working != nil and objective = "at_home" and currentHour = startWork and currentDay <= 6 {
+	reflex home_work when: working != nil and objective = "at_home" and currentHour = startWork and currentDay < 5 {
 		objective <- "at_work";
 		myTarget <- any_location_in(working);
 	}
@@ -197,10 +238,17 @@ species person skills: [moving] {
 		myTarget <- any_location_in(living);
 	}
 	
-	reflex home_play when: playing != nil and objective = "at_home" and currentHour = startFreeTime {
+	reflex home_play when: playing != nil and objective = "at_home" and ((currentHour = startFreeTime and currentDay < 5) or (currentDay > 4 and currentHour > 8)) {
 		objective <- "in_town";
 		myTarget <- any_location_in(playing);
 	}
+	
+	reflex play_home when: living != nil and objective = "in_town" and currentHour = endFreeTime {
+		objective <- "at_home";
+		myTarget <- any_location_in(living);
+	}
+	
+
 	
 	reflex move when: myTarget != nil {
 		path myPath <- self goto [target::myTarget, on::theGraph, return_path::true];
@@ -219,15 +267,16 @@ species person skills: [moving] {
 
 }
 
-experiment first_experiment type: gui until: time = 180 {
+experiment first_experiment type: gui until: (cycle = 3600) {
 //	reflex write_text {
 //		write "Person " + person.id + " has engagement "+ person.engagement;
 //	}
 	output {
 		display map type: opengl {
-			species district;
-			species object;
-			species person;
+			species district aspect: base;
+			species object aspect: base;
+			species person aspect: base;
+			species road aspect: base;
 		}
 
 				
