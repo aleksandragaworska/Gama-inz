@@ -20,7 +20,8 @@ global {
 	
 	geometry shape <- envelope(shp_boundaries);	
 	
-	float changeEngagementsMax <- 0.5; // gdy wszystkie warunki pchają do zaangażowania (nagroda, potrzeba, okolica)
+	float changeEngagementsMaxMax <- 0.7; // gdy wszystkie warunki pchają do zaangażowania (nagroda, potrzeba, okolica itd)
+	float changeEngagementsMax <- 0.5; // gdy prawie wszystkie warunki pchają do zaangażowania
 	float changeEngagementsAvg <- 0.3; // gdy 2 z 3 w/w warunków występują
 	float changeEngagementsMin <- 0.1; // gdy występuje tylko 1 z w/w warunków
 	
@@ -112,7 +113,8 @@ global {
 		/* tworzenie agentów */
 		create person from: shp_agents with: [id::int(read("ID")), age::float(read("AGE")), altruism::float(read("ALTRUISM")), 
 			education::float(read("EDUCATION")), happiness::float(read("HAPPINESS")), wealth::float(read("WEALTH")), identity::float(read("IDENTITY")),
-			isMarried::bool(read("MARRIED")), numOfChildren::int(read("CHILDREN")), engagement::float(read("ENGAGEMENT")) //married bool or int?
+			isMarried::bool(read("MARRIED")), numOfChildren::int(read("CHILDREN")), engagement::float(read("ENGAGEMENT")), hasCar::bool(read("HAS_CAR")),
+			sporty::float(read("SPORTY")), cultural::float(read("CULTURAL")) //married bool or int?
 		]{
 			objective <- "at_home";
 			
@@ -125,7 +127,7 @@ global {
 			
 			living <- flip(blockers) ? one_of(blocks) : one_of(flats);
 			working <- flip(workers) ? one_of(factories) : one_of(offices);
-			myDistrict <- district closest_to(location);
+			myDistrict <- district closest_to(living);
 			playing <- one_of(cultural_centers);
 		}
 		
@@ -134,39 +136,99 @@ global {
 
 
 		
+//	reflex update {
+//		ask person {
+//			ask one_of(objectInNeighbour) {
+//				if (self.needs = 1) {
+//					if (self overlaps myself) {
+//						if (myself.numOfChildren > 0) {
+//							if (self.prize = "szybciej_przedszkole") {
+//								myself.engagement <- myself.engagement + changeEngagementsMax;
+//							}
+//							else if (self.prize_num > 0.1) {
+//								myself.engagement <- myself.engagement + changeEngagementsAvg;
+//							}
+//				
+//						}
+//						else if (myself.wealth < 0.5) {
+//							if (self.prize = "kolejka_lekarz") {
+//								myself.engagement <- myself.engagement + changeEngagementsMax;
+//							}
+//							else if (self.prize_num > 0.1) {
+//								myself.engagement <- myself.engagement + changeEngagementsAvg;
+//							}
+//						
+//						}
+//						else if (self.prize_num > 0.1) {
+//							myself.engagement <- myself.engagement + changeEngagementsMin;
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+
+
 	reflex update {
 		ask person {
 			ask one_of(objectInNeighbour) {
 				if (self.needs = 1) {
 					if (self overlaps myself) {
-						if (myself.numOfChildren > 0) {
-							if (self.prize = "szybciej_przedszkole") {
+						if (type = "szkola") { //or one_of(schools) <- to nie działa
+							if (myself.numOfChildren > 0) {
+								if (prize = "szybciej_przedszkole") {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else if (prize_num > 0.1) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						} else if (type = "zabytek") {
+							if (myself.cultural > 0.7) {
+								if (prize = "bilety_do_kina") {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else if (prize_num > 0) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						} else if (type = "zabytek" or type = "bulwary") {
+							if (myself.sporty > 0.7 or myself.age > 0.6 or myself.numOfChildren > 0) {
 								myself.engagement <- myself.engagement + changeEngagementsMax;
 							}
-							else if (self.prize_num > 0.1) {
-								myself.engagement <- myself.engagement + changeEngagementsAvg;
-							}
-				
 						}
-						else if (myself.wealth < 0.5) {
-							if (self.prize = "kolejka_lekarz") {
-								myself.engagement <- myself.engagement + changeEngagementsMax;
+						if (myself.wealth < 0.3) {
+							if (prize = "szybciej_lekarz") {
+								if (myself.age > 0.6) {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
 							}
-							else if (self.prize_num > 0.1) {
-								myself.engagement <- myself.engagement + changeEngagementsAvg;
-							}
-						
 						}
-						else if (self.prize_num > 0.1) {
-							myself.engagement <- myself.engagement + changeEngagementsMin;
+						if (myself.age > 0.2 and myself.age < 0.35) {
+							if (prize = "bilety_komunikacyjne") {
+								if (!myself.hasCar) {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						}
+						if (myself.altruism > 0.7) {
+							if (myself.currentPlace = myself.myDistrict) { 
+								if (myself.identity > 0.7) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsAvg;
+								}
+							} else {
+								myself.engagement <- myself.engagement + changeEngagementsMin;
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-
-		
 }
 
 species road {
@@ -207,6 +269,10 @@ species person skills: [moving] {
 	bool isMarried;
 	int numOfChildren;
 	float engagement;
+	bool hasCar;
+	float sporty;
+	float cultural;
+	
 	
 	string objective;
 	float startWork;
