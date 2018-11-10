@@ -10,7 +10,7 @@ model grywalizacja
 /* Insert your model definition here */
 
 global {
-	float step <- 90 # mn;
+	float step <- 60 # mn;
 	
 	file shp_agents <- file ("../includes/MIESZKANCY_MM_point.shp");
 	file shp_objects <- file ("../includes/OBIEKTY_region.shp");
@@ -27,6 +27,7 @@ global {
 	
 	float workers <- 0.5;
 	float blockers <- 0.8;
+	float players <- 0.85;
 	
 	float maxDistance <- 3.0 #km;
 	graph theGraph;
@@ -103,6 +104,7 @@ global {
 		
 		list<object> flats <- object where (each.type = "niska zabudowa");
 		list<object> blocks <- object where (each.type = "blokowisko");
+		list<object> homes <- object where (each.type = "niska zabudowa" or each.type = "blokowisko");
 		list<object> offices <- object where (each.type = "biurowiec");
 		list<object> factories <- object where (each.type = "fabryka");
 		list<object> surgeries <- object where (each.type = "przychodnia");
@@ -116,6 +118,7 @@ global {
 			isMarried::bool(read("MARRIED")), numOfChildren::int(read("CHILDREN")), engagement::float(read("ENGAGEMENT")), hasCar::bool(read("HAS_CAR")),
 			sporty::float(read("SPORTY")), cultural::float(read("CULTURAL")) //married bool or int?
 		]{
+			startEngagement <- engagement;
 			objective <- "at_home";
 			
 			startWork <- minWorkStart + rnd((maxWorkStart - minWorkStart) * 60) / 60;
@@ -128,11 +131,20 @@ global {
 			living <- flip(blockers) ? one_of(blocks) : one_of(flats);
 			working <- flip(workers) ? one_of(factories) : one_of(offices);
 			myDistrict <- district closest_to(living);
-			playing <- one_of(cultural_centers);
+			playing <- flip(players) ? one_of(cultural_centers) : one_of(homes);
 		}
 		
 
 	}
+	
+//		reflex save_engagement when: cycle = 1 or cycle = 10 or cycle = 50 or cycle = 100 or cycle = 400 or cycle = 1000 {
+//		string fileName <- "output/firstCSV_cycle" + cycle + ".csv";
+//		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
+//		
+//		save [person.name] to: fileName type: csv;
+//		
+//		save [agents] to: fileName2 type: csv;
+//	}
 
 
 		
@@ -169,66 +181,66 @@ global {
 //	}
 
 
-	reflex update {
-		ask person {
-			ask one_of(objectInNeighbour) {
-				if (self.needs = 1) {
-					if (self overlaps myself) {
-						if (type = "szkola") { //or one_of(schools) <- to nie działa
-							if (myself.numOfChildren > 0) {
-								if (prize = "szybciej_przedszkole") {
-									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
-								} else if (prize_num > 0.1) {
-									myself.engagement <- myself.engagement + changeEngagementsMax;
-								}
-							}
-						} else if (type = "zabytek") {
-							if (myself.cultural > 0.7) {
-								if (prize = "bilety_do_kina") {
-									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
-								} else if (prize_num > 0) {
-									myself.engagement <- myself.engagement + changeEngagementsMax;
-								}
-							}
-						} else if (type = "zabytek" or type = "bulwary") {
-							if (myself.sporty > 0.7 or myself.age > 0.6 or myself.numOfChildren > 0) {
-								myself.engagement <- myself.engagement + changeEngagementsMax;
-							}
-						}
-						if (myself.wealth < 0.3) {
-							if (prize = "szybciej_lekarz") {
-								if (myself.age > 0.6) {
-									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
-								} else {
-									myself.engagement <- myself.engagement + changeEngagementsMax;
-								}
-							}
-						}
-						if (myself.age > 0.2 and myself.age < 0.35) {
-							if (prize = "bilety_komunikacyjne") {
-								if (!myself.hasCar) {
-									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
-								} else {
-									myself.engagement <- myself.engagement + changeEngagementsMax;
-								}
-							}
-						}
-						if (myself.altruism > 0.7) {
-							if (myself.currentPlace = myself.myDistrict) { 
-								if (myself.identity > 0.7) {
-									myself.engagement <- myself.engagement + changeEngagementsMax;
-								} else {
-									myself.engagement <- myself.engagement + changeEngagementsAvg;
-								}
-							} else {
-								myself.engagement <- myself.engagement + changeEngagementsMin;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+//	reflex update {
+//		ask person {
+//			ask one_of(objectInNeighbour) {
+//				if (self.needs = 1) {
+//					if (self overlaps myself) {
+//						if (type = "szkola") { //or one_of(schools) <- to nie działa
+//							if (myself.numOfChildren > 0) {
+//								if (prize = "szybciej_przedszkole") {
+//									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+//								} else if (prize_num > 0.1) {
+//									myself.engagement <- myself.engagement + changeEngagementsMax;
+//								}
+//							}
+//						} else if (type = "zabytek") {
+//							if (myself.cultural > 0.7) {
+//								if (prize = "bilety_do_kina") {
+//									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+//								} else if (prize_num > 0) {
+//									myself.engagement <- myself.engagement + changeEngagementsMax;
+//								}
+//							}
+//						} else if (type = "zabytek" or type = "bulwary") {
+//							if (myself.sporty > 0.7 or myself.age > 0.6 or myself.numOfChildren > 0) {
+//								myself.engagement <- myself.engagement + changeEngagementsMax;
+//							}
+//						}
+//						if (myself.wealth < 0.3) {
+//							if (prize = "szybciej_lekarz") {
+//								if (myself.age > 0.6) {
+//									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+//								} else {
+//									myself.engagement <- myself.engagement + changeEngagementsMax;
+//								}
+//							}
+//						}
+//						if (myself.age > 0.2 and myself.age < 0.35) {
+//							if (prize = "bilety_komunikacyjne") {
+//								if (!myself.hasCar) {
+//									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+//								} else {
+//									myself.engagement <- myself.engagement + changeEngagementsMax;
+//								}
+//							}
+//						}
+//						if (myself.altruism > 0.7) {
+//							if (myself.currentPlace = myself.myDistrict) { 
+//								if (myself.identity > 0.7) {
+//									myself.engagement <- myself.engagement + changeEngagementsMax;
+//								} else {
+//									myself.engagement <- myself.engagement + changeEngagementsAvg;
+//								}
+//							} else {
+//								myself.engagement <- myself.engagement + changeEngagementsMin;
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 }
 
 species road {
@@ -272,6 +284,7 @@ species person skills: [moving] {
 	bool hasCar;
 	float sporty;
 	float cultural;
+	float startEngagement;
 	
 	
 	string objective;
@@ -330,6 +343,99 @@ species person skills: [moving] {
 			location <- { location.x, location.y, currentPlace.height };
 		}
 	}
+	
+//	reflex writeCurrentEngagement {
+//		write(self.name + "has current engagement: " + self.engagement);
+//	}
+//	action modifyEngagement() 
+	
+	reflex update {
+		ask person {
+//			write 'Test ' + self.name;
+			ask one_of(objectInNeighbour) {
+//				write 'Test ' + type;
+//				if (self.needs = 1) {
+//					write self.needs;
+					if (self overlaps myself) {
+//						write type;
+//						if (type = 'blokowisko') {
+//							write 'Blok';
+//						}
+						if (type = "szkola") { //or one_of(schools) <- to nie działa
+							write 'AAA';
+							if (myself.numOfChildren > 0) {
+								if (prize = "szybciej_przedszkole") {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else if (prize_num > 0.1) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						} else if (type = "zabytek") {
+							write 'BBB';
+							if (myself.cultural > 0.7) {
+								if (prize = "bilety_do_kina") {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else if (prize_num > 0) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						} else if (type = "bulwary") {
+							write 'CCC';
+							if (myself.sporty > 0.7 or myself.age > 0.6 or myself.numOfChildren > 0) {
+								myself.engagement <- myself.engagement + changeEngagementsMax;
+							}
+						}
+						if (myself.wealth < 0.3) {
+							if (prize = "szybciej_lekarz") {
+								if (myself.age > 0.6) {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						}
+						if (myself.age > 0.2 and myself.age < 0.35) {
+							if (prize = "bilety_komunikacyjne") {
+								if (!myself.hasCar) {
+									myself.engagement <- myself.engagement + changeEngagementsMaxMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								}
+							}
+						}
+						if (myself.altruism > 0.7) {
+							if (myself.currentPlace = myself.myDistrict) { 
+								if (myself.identity > 0.7) {
+									myself.engagement <- myself.engagement + changeEngagementsMax;
+								} else {
+									myself.engagement <- myself.engagement + changeEngagementsAvg;
+								}
+							} else {
+								myself.engagement <- myself.engagement + changeEngagementsMin;
+							}
+						}
+					}
+//				}
+			}
+		}
+	}
+	
+	reflex save_person when: cycle = 1 or cycle = 10 or cycle = 50 or cycle = 100 or cycle = 400 or cycle = 1000 {
+//		string fileName <- "output/firstCSV_cycle" + cycle + ".csv";
+//		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
+//		string fileName3 <- "output/objective_cycle" + cycle + ".csv";
+		string fileName4 <- "output/speciesOf2_cycle" + cycle + ".csv";
+		
+//		save [self, self.age, self.numOfChildren, self.wealth, self.cultural, 
+//			self.sporty, self.altruism, self.identity, self.myDistrict, 
+//			self.startEngagement, self.engagement
+//		] to: fileName type: csv;
+		
+		save species_of(self) to: fileName4 type: csv;
+//		
+//		save [agents] to: fileName2 type: csv;
+//		save [self.name, self.objective, ]
+	}
 
 }
 
@@ -344,6 +450,14 @@ experiment first_experiment type: gui until: (cycle = 3600) {
 			species person aspect: base;
 			species road aspect: base;
 		}
+		
+		display chart_display refresh:every(1 #cycle) {
+          chart "People Objectif" type: pie style: exploded size: {1, 0.5} position: {0, 0.5}{
+	       data "Work" value: person count (each.objective="at_work") color: #magenta ;
+	       data "Home" value: person count (each.objective="at_home") color: #blue ;
+	       data "Town" value: person count (each.objective="in_town") color: #green ;
+	       }
+	  }
 
 				
 	}
