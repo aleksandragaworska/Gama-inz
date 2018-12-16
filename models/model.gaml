@@ -387,24 +387,24 @@ species person skills: [moving] {
 		//					write self.isSocialworker;
 		//					write cycle;
 	//					write 'killer: '+one_of(killer)+' me: '+self.name;
-						myself.engagement <- myself.engagement - changeIfKiller * myself.startEngagement;
-						if (myself.isSocialworker and myself.temp_objective = false) { 	
+						if (myself.isSocialworker and myself.temp_objective = false) { 
+							myself.engagement <- myself.engagement - changeIfKiller * myself.startEngagement;	
 							//for full simulations: 5000, for part(100 cycles): 500, for the shortest(10 cycle): 50
-//							if (self.engagementTime < 500) { 
+							if (self.engagementTime < 50) { 
 								//at the beginning, killer want to kill every social workers
-							self.engagement <- self.engagement + changeIfKiller * self.startEngagement; 
-//							} 
+								self.engagement <- self.engagement + changeIfKiller * self.startEngagement; 
+							} 
 							//for full simulations: 15000, for part(100 cycles): 1500, for the shortest(10 cycle): 150
-//							else if (self.engagementTime > 1500) { //
+							else if (self.engagementTime > 150) { //
 								//later, when he won, his interest to win falls
-//								self.engagement <- self.engagement - changeIfKiller * self.startEngagement;
-//							}
+								self.engagement <- self.engagement - changeIfKiller * self.startEngagement;
+							}
 	//						write 'person' + myself.name + ' param: ' + myself.engagementTime + ' cycle: ' + cycle;
 							//times when "met" social worker
-//							self.engagementTime <- self.engagementTime + 1;
+							self.engagementTime <- self.engagementTime + 1;
 						}
 						else if (myself.isKiller and myself.temp_objective = false) {
-//							myself.engagement <- myself.engagement + changeIfKiller * myself.startEngagement;
+							myself.engagement <- myself.engagement + changeIfKiller * myself.startEngagement;
 							self.engagement <- self.engagement + 2 * changeIfKiller * self.startEngagement;
 						}
 	//				}
@@ -422,7 +422,7 @@ species person skills: [moving] {
 //		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
 //		string fileName3 <- "output/objective_cycle" + cycle + ".csv";
 //		string fileName4 <- "output/speciesOf2_cycle" + cycle + ".csv";
-		string fileName5 <- "output/withKiller2_cycle" + cycle + ".csv";
+		string fileName5 <- "output/withKillerWithoutMinMaxAndAddTime2_cycle" + cycle + ".csv";
 		
 //		save [self, self.age, self.numOfChildren, self.wealth, self.cultural, 
 //			self.sporty, self.altruism, self.identity, self.myDistrict, 
