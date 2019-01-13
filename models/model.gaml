@@ -58,6 +58,8 @@ global {
 	int minFreeTimeEndIfNotWorker <- 16;
 	int minFreeTimeEnd <- 21;
 	int maxFreeTimeEnd <- 23;
+	int minFreeTimeStartWeekend <- 10;
+	int maxFreeTimeStartWeekend <- 14;
 	float maxSpeed <- 30 #km/#h;
 	float minSpeed <- 5 #km/#h;
 	
@@ -162,6 +164,8 @@ global {
 					startFreeTime <- minFreeTimeStart + rnd((maxFreeTimeStart - minFreeTimeStart) * 60) / 60;
 					endFreeTime <- minFreeTimeEnd + rnd((maxFreeTimeEnd - minFreeTimeEnd) * 60) / 60;
 				}
+				startFreeTimeWeekend <- minFreeTimeStartWeekend + rnd((maxFreeTimeStartWeekend - minFreeTimeStartWeekend) *60) / 60;
+				endFreeTimeWeekend <- minFreeTimeEnd + rnd((maxFreeTimeEnd - minFreeTimeEnd) * 60) / 60;				
 				playing <- cultural_centers;
 			}
 			
@@ -225,6 +229,8 @@ species person skills: [moving] {
 	float endWork;
 	float startFreeTime;
 	float endFreeTime;
+	float startFreeTimeWeekend;
+	float endFreeTimeWeekend;
 	float mySpeed;
 	point myTarget;
 	
@@ -264,7 +270,7 @@ species person skills: [moving] {
 	
 	reflex home_play when: is_player = true and objective = "at_home" 
 	and (((currentHour > startFreeTime - 0.25 and currentHour < startFreeTime + 0.25) and currentDay < 5) 
-		or (currentDay > 4 and currentHour > 10)) {
+		or (currentDay > 4 and (currentHour > startFreeTimeWeekend - 0.25 and currentHour < startFreeTimeWeekend + 0.25))) {
 		objective <- "in_town";
 		temp_objective <- false;
 //		myTarget <- any_location_in(playing);
@@ -272,7 +278,8 @@ species person skills: [moving] {
 	}
 	
 	reflex play_home when: living != nil and objective = "in_town" 
-	and (currentHour > endFreeTime - 0.25 and currentHour < endFreeTime + 0.25) {
+	and (((currentHour > endFreeTime - 0.25 and currentHour < endFreeTime + 0.25) and currentDay < 5) 
+		or (currentDay > 4 and (currentHour > endFreeTimeWeekend - 0.25 and currentHour < endFreeTimeWeekend + 0.25))) {
 		objective <- "at_home";
 		temp_objective <- false;
 		myTarget <- any_location_in(living);
