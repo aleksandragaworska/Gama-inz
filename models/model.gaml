@@ -35,12 +35,14 @@ global {
 	float blockers <- 0.8;
 	float players <- 0.45;
 	
-	float maxDistance <- 1 #km;
+	float maxDistance <- 0.25 #km;
+	float maxDistanceBeetwenPeople <- 20 #m;
 	graph theGraph;
 //	
 //	int currentHour update: (time / #hour) mod 24;
 //	int currentDay update: (time / #days) mod 7;
-
+	
+//	int week update: time / #weeks;
 	int days update: time / #days;
 	int currentDay update: (time / #days) mod 7;
 	float currentHour update: (time / #hours) - 24.0 * days;
@@ -164,6 +166,7 @@ global {
 			}
 			
 			engagementTime <- 0;
+			myDay <- -1;
 		}
 	}
 }
@@ -226,6 +229,7 @@ species person skills: [moving] {
 	point myTarget;
 	
 	bool temp_objective;
+	int myDay;
 	
 	object living;
 	object working;
@@ -237,19 +241,24 @@ species person skills: [moving] {
 		draw circle(10) color: #yellow;
 	}
 	
+	
 	list<object> objectInNeighbour update: object at_distance maxDistance;
 
 	object currentPlace update: object closest_to(location);
 	
+	list<person> myFriendsKillers <- person where (each.isKiller) update: (person at_distance maxDistanceBeetwenPeople where each.isKiller);
+	
 	reflex home_work when: working != nil and objective = "at_home" 
 	and (currentHour > startWork - 0.25 and currentHour < startWork + 0.25) and currentDay < 5 {
 		objective <- "at_work";
+		temp_objective <- false;
 		myTarget <- any_location_in(working); //any_location_in wybiera dowolny punkt w tym obszarze
 	}
 	
 	reflex work_home when: living != nil and objective = "at_work" 
 	and (currentHour > endWork - 0.25 and currentHour < endWork + 0.25) {
 		objective <- "at_home";
+		temp_objective <- false;
 		myTarget <- any_location_in(living);
 	}
 	
@@ -257,6 +266,7 @@ species person skills: [moving] {
 	and (((currentHour > startFreeTime - 0.25 and currentHour < startFreeTime + 0.25) and currentDay < 5) 
 		or (currentDay > 4 and currentHour > 10)) {
 		objective <- "in_town";
+		temp_objective <- false;
 //		myTarget <- any_location_in(playing);
 		myTarget <- any_location_in(one_of(playing));
 	}
@@ -264,6 +274,7 @@ species person skills: [moving] {
 	reflex play_home when: living != nil and objective = "in_town" 
 	and (currentHour > endFreeTime - 0.25 and currentHour < endFreeTime + 0.25) {
 		objective <- "at_home";
+		temp_objective <- false;
 		myTarget <- any_location_in(living);
 	}
 	
@@ -290,14 +301,15 @@ species person skills: [moving] {
 //	action modifyEngagement() 
 	
 	reflex update {
-//		if (cycle mod 10 = 0 and engagement > 10) {
-//			engagement <- engagement / 100;
-//		}
-//		else if (engagement < 0 and cycle mod 10 - 0) {
-//			engagement <- engagement * (-0.01);
-//		}
+		
+		if (engagement > 1) {
+			engagement <- 1.0;
+		}
+		else if (engagement < 0) {
+			engagement <- 0.0;
+		}
 		if (currentHour >= 7 and currentHour <= 21) {
-			ask person {
+//			ask person {
 	//			write 'Test ' + self.name;
 				ask one_of(objectInNeighbour) {
 //					write myself.temp_objective;
@@ -310,8 +322,7 @@ species person skills: [moving] {
 		//					}
 		//					else if (self overlaps myself and myself.temp_objective != myself.objective) {
 //							if (self overlaps myself and myself.temp_objective = false) {
-							if (myself.temp_objective = false) {
-//								write myself.temp_objective;
+							if (myself.temp_objective = false and myself.myDay != currentDay) {
 		//						if (type = 'blokowisko') {
 		//							write 'Blok';
 		//						}							
@@ -321,32 +332,37 @@ species person skills: [moving] {
 										if (prize = "szybciej_przedszkole") {
 											myself.engagement <- myself.engagement + changeEngagementsTheMost * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "przedszkole: " + myself.engagement;
 										} else if (prize_num > 0.1) {
 											myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "przedszkole2: " + myself.engagement;
 										}
 									}
 								} else if (type = "zabytek") {
 		//							write 'BBB';
-									if (myself.cultural > 0.7) {
+									if (myself.cultural > 0.85) {
 										if (prize = "bilety_do_kina") {
 											myself.engagement <- myself.engagement + changeEngagementsTheMost * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "kino: " + myself.engagement;
 										} else if (prize_num > 0) {
 											myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "kino2: " + myself.engagement;
 										}
 									}
 								} else if (type = "bulwary") {
 		//							write 'CCC';
-									if (myself.sporty > 0.7 or myself.age > 0.6 or myself.age < 0.25 or myself.numOfChildren > 0) {
+									if (myself.sporty > 0.85 or myself.age > 0.6 or myself.age < 0.25 or myself.numOfChildren > 0) {
 										myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 		//								write "Person: "+myself.name+" eng: "+myself.engagement;
 										myself.temp_objective <- true;
+										myself.myDay <- currentDay;
 		//								write "bulwary: " + myself.engagement;
 									}
 								}
@@ -355,10 +371,12 @@ species person skills: [moving] {
 										if (myself.age > 0.6) {
 											myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "lekarz: " + myself.engagement;
 										} else {
 											myself.engagement <- myself.engagement + changeEngagementsAvg * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "lekarz2: " + myself.engagement;
 										}
 									}
@@ -368,35 +386,41 @@ species person skills: [moving] {
 										if (!myself.hasCar) {
 											myself.engagement <- myself.engagement + changeEngagementsTheMost * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "komunikacja: " + myself.engagement;
 										} else {
 											myself.engagement <- myself.engagement + changeEngagementsAvg * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 		//									write "komunikacja2: " + myself.engagement;
 										}
 									}
 								}
-								else if (myself.altruism > 0.4) {
-									if (myself.altruism > 0.7) {
-										if (myself.currentPlace = myself.myDistrict) { 
-											if (myself.identity > 0.7) {
+								else if (myself.altruism > 0.5) {
+									if (myself.altruism > 0.85) {
+										if (myself.currentPlace overlaps myself.myDistrict) { 
+											if (myself.identity > 0.85) {
 												myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 												myself.temp_objective <- true;
+												myself.myDay <- currentDay;
 			//									write "identyfikacja+altruism: " + myself.engagement;
 											} else {
 												myself.engagement <- myself.engagement + changeEngagementsAvg * myself.startEngagement;
 												myself.temp_objective <- true;
+												myself.myDay <- currentDay;
 			//									write "moja dzielnia+altruism: " + myself.engagement;
 											}
 										}
 										else {
 											myself.engagement <- myself.engagement + changeEngagementsAvg * myself.startEngagement;
 											myself.temp_objective <- true;
+											myself.myDay <- currentDay;
 			//								write "moja dzielnia+altruism: " + myself.engagement;
 										}
 									} else {
 										myself.engagement <- myself.engagement + changeEngagementsMin * myself.startEngagement;
 										myself.temp_objective <- true;
+										myself.myDay <- currentDay;
 		//								write "altruism: " + myself.engagement;
 									}
 								}
@@ -404,7 +428,7 @@ species person skills: [moving] {
 						}
 	//				}
 					}
-				}
+//				}
 			}
 		}
 //		if (engagement = 1 ) {
@@ -414,20 +438,25 @@ species person skills: [moving] {
 //	list<person> socialWorker update: person where isSocialworker;
 	
 	reflex changeEngagementWithKiller {
-		if (currentHour > 7 and currentHour < 21) {
-			list<person> killers <- person at_distance(maxDistance) where (each.isKiller);
+		if (length(myFriendsKillers) > 0 and temp_objective = true) {		
+//			write killers;
 	//		list<person> socialWorker <- person at_distance(maxDistance) where isSocialworker;
-			person killer <- one_of(killers);
-			ask(person) { // myself
+//			ask(person) { // myself
+//				list<person> killers <- person where (distance_to(each.location, myself.location) < maxDistance);
+//				write killers;	
+//				write length(myFriendsKillers);
+				person killer <- one_of(myFriendsKillers);
+//				write killer.isKiller;
 				ask(killer) { // self
-	//				if (one_of(killer) != nil) {
-	//					write myself.name + ' '+ myself.isKiller;
+//					write self.name + ' '+ self.isKiller;
+//					if (myself.temp_objective = true) {
+					
 		//				if (one_of(myself neighbors_at(maxDistance)) = self) {
 		//					write myself.isKiller;
 		//					write self.isSocialworker;
 		//					write cycle;
 	//					write 'killer: '+one_of(killer)+' me: '+self.name;
-						if (myself.isSocialworker and myself.temp_objective = false) { 
+						if (myself.isSocialworker) { 
 							myself.engagement <- myself.engagement - changeIfSocialMeetKiller * myself.startEngagement;	
 							//for full simulations: 5000, for part(100 cycles): 500, for the shortest(10 cycle): 50
 							if (self.engagementTime < 500) { 
@@ -443,11 +472,11 @@ species person skills: [moving] {
 							//times when "met" social worker
 							self.engagementTime <- self.engagementTime + 1;
 						}
-						else if (myself.isKiller and myself.temp_objective = false) {
+						else if (myself.isKiller) {
 							myself.engagement <- myself.engagement + 2 * changeIfIamKiller * myself.startEngagement;
 							self.engagement <- self.engagement + changeIfIamKiller * self.startEngagement;
 						}
-						else if (myself.temp_objective = false) {
+						else {
 							myself.engagement <- myself.engagement + changeIfNormalMeetKiller * myself.startEngagement;
 							if (self.engagementTime < 500) { 
 								//at the beginning, killer want to kill every social workers
@@ -460,8 +489,8 @@ species person skills: [moving] {
 							}
 							self.engagementTime <- self.engagementTime + 1;
 						}
-	//				}
-				}
+//					}
+//				}
 			}
 		}
 	}
@@ -470,13 +499,13 @@ species person skills: [moving] {
 //		write 'cycle: ' + cycle + ' currentHour: ' + currentHour + ' currentDay: ' + currentDay;
 //	}
 	
-	reflex save_person when: cycle = 28 or cycle = 48 or cycle = 72 or cycle = 80 or cycle = 1000 {
+	reflex save_person when: cycle = 2688 {
 //		string fileName <- "output/firstCSV_cycle" + cycle + ".csv";
 //		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
 //		string fileName3 <- "output/objective_cycle" + cycle + ".csv";
 //		string fileName4 <- "output/speciesOf2_cycle" + cycle + ".csv";
 //		string fileName5 <- "output/withKiller2ToMEMod10Divide_cycle" + cycle + ".csv";
-		string fileName5 <- "output/uKamilaNORMALIZEDbezDzielenia_cycle" + cycle + ".csv";
+		string fileName5 <- "output/NOWiscorrectKiller_cycle" + cycle + ".csv";
 		
 //		save [self, self.age, self.numOfChildren, self.wealth, self.cultural, 
 //			self.sporty, self.altruism, self.identity, self.myDistrict, 
@@ -493,7 +522,7 @@ species person skills: [moving] {
 
 }
 
-experiment first_experiment type: gui until: (cycle = 3600) {
+experiment first_experiment type: gui until: (cycle = 2688) {
 //	reflex write_text {
 //		write "Person " + person.id + " has engagement "+ person.engagement;
 //	}
