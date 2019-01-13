@@ -69,7 +69,7 @@ global {
 		theGraph <- as_edge_graph(road);
 		
 		create district from: shp_districts with: [name::string(read("NAZWA"))] {
-			distColor <- rgb(255, 102, 102); //malinowy
+			distColor <- rgb(153, 255, 102); //#99ff66 - jasny zielony
 		}
 		
 		create object from: shp_objects with: [type::string(read("TYP")), needs::bool(read("POTRZEBA")), prize_num::float(read("NAGRODA"))
@@ -77,31 +77,31 @@ global {
 //			list<object> withNeeds <-  (type, prize) where needs;
 			
 			if (type = "niska zabudowa") {
-				objColor <- rgb(0, 51, 102); //ciemnoniebieski
+				objColor <- rgb(160, 160, 169); //szary wpadający w niebieski
 			}
 			else if (type = "blokowisko") {
 				objColor <- rgb(128, 128, 128); //szary
 			}
 			else if (type = "biurowiec") {
-				objColor <- rgb(153, 51, 255);//fioletowy
+				objColor <- rgb(218, 112, 214);//fioletowy
 			}
 			else if (type = "bulwary") {
-				objColor <- rgb(153, 255, 153); //błękitny
+				objColor <- rgb(255, 215, 0); //żółty złoty
 			}
 			else if (type = "park") {
-				objColor <- rgb(0, 255, 0); //zielony
+				objColor <- rgb(50, 255, 50); //zielony
 			}
 			else if (type = "fabryka") {
-				objColor <- rgb(0, 0, 0); //czarny
+				objColor <- rgb(100, 100, 100); //ciemny szary
 			}
 			else if (type = "zabytek") {
-				objColor <- rgb(255, 0, 0); //czerwony
+				objColor <- rgb(210, 105, 30); //czekoladowy
 			}
 			else if (type = "rzeka") {
-				objColor <- rgb(0, 0, 255); //niebieski
+				objColor <- rgb(50, 50, 255); //niebieski
 			}
 			else if (type = "przychodnia" or type = "szkola" or type = "urzad") {
-				objColor <- rgb(51, 102, 0); //ciemnozielony
+				objColor <- rgb(85, 107, 47); //ciemnozielony
 			}
 			
 			height <- 20 + rnd(200);
@@ -238,7 +238,7 @@ species person skills: [moving] {
 	int engagementTime;
 	
 	aspect base {
-		draw circle(10) color: #yellow;
+		draw circle(10) color: #red;
 	}
 	
 	
@@ -300,14 +300,13 @@ species person skills: [moving] {
 //	}
 //	action modifyEngagement() 
 	
-	reflex update {
-		
-		if (engagement > 1) {
-			engagement <- 1.0;
-		}
-		else if (engagement < 0) {
-			engagement <- 0.0;
-		}
+	reflex update {		
+//		if (engagement > 1) {
+//			engagement <- 1.0;
+//		}
+//		else if (engagement < 0) {
+//			engagement <- 0.0;
+//		}
 		if (currentHour >= 7 and currentHour <= 21) {
 //			ask person {
 	//			write 'Test ' + self.name;
@@ -343,7 +342,7 @@ species person skills: [moving] {
 									}
 								} else if (type = "zabytek") {
 		//							write 'BBB';
-									if (myself.cultural > 0.85) {
+									if (myself.cultural > 0.9) {
 										if (prize = "bilety_do_kina") {
 											myself.engagement <- myself.engagement + changeEngagementsTheMost * myself.startEngagement;
 											myself.temp_objective <- true;
@@ -358,7 +357,7 @@ species person skills: [moving] {
 									}
 								} else if (type = "bulwary") {
 		//							write 'CCC';
-									if (myself.sporty > 0.85 or myself.age > 0.6 or myself.age < 0.25 or myself.numOfChildren > 0) {
+									if (myself.sporty > 0.9 or myself.age > 0.6 or myself.age < 0.25 or myself.numOfChildren > 0) {
 										myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 		//								write "Person: "+myself.name+" eng: "+myself.engagement;
 										myself.temp_objective <- true;
@@ -396,10 +395,10 @@ species person skills: [moving] {
 										}
 									}
 								}
-								else if (myself.altruism > 0.5) {
-									if (myself.altruism > 0.85) {
+								else if (myself.altruism > 0.6) {
+									if (myself.altruism > 0.9) {
 										if (myself.currentPlace overlaps myself.myDistrict) { 
-											if (myself.identity > 0.85) {
+											if (myself.identity > 0.9) {
 												myself.engagement <- myself.engagement + changeEngagementsMax * myself.startEngagement;
 												myself.temp_objective <- true;
 												myself.myDay <- currentDay;
