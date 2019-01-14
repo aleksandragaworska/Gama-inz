@@ -465,12 +465,12 @@ species person skills: [moving] {
 						if (myself.isSocialworker) { 
 							myself.engagement <- myself.engagement - changeIfSocialMeetKiller * myself.startEngagement;	
 							//for full simulations: 5000, for part(100 cycles): 500, for the shortest(10 cycle): 50
-							if (self.engagementTime < 500) { 
+							if (self.engagementTime < 5000) { 
 								//at the beginning, killer want to kill every social workers
 								self.engagement <- self.engagement + changeIfIamKiller * self.startEngagement; 
 							} 
 							//for full simulations: 15000, for part(100 cycles): 1500, for the shortest(10 cycle): 150
-							else if (self.engagementTime > 1500) { //
+							else if (self.engagementTime > 15000) { //
 								//later, when he won, his interest to win falls
 								self.engagement <- self.engagement - (changeIfIamKiller / 2) * self.startEngagement;
 							}
@@ -505,7 +505,7 @@ species person skills: [moving] {
 //		write 'cycle: ' + cycle + ' currentHour: ' + currentHour + ' currentDay: ' + currentDay;
 //	}
 	
-	reflex save_person when: cycle = 2688 {
+	reflex save_person when: cycle = 96 or cycle = 672 or cycle = 1344 or cycle = 2688 {
 //		string fileName <- "output/firstCSV_cycle" + cycle + ".csv";
 //		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
 //		string fileName3 <- "output/objective_cycle" + cycle + ".csv";
