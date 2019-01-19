@@ -169,7 +169,6 @@ global {
 				playing <- cultural_centers;
 			}
 			
-			engagementTime <- 0;
 			myDay <- -1;
 		}
 	}
@@ -241,7 +240,6 @@ species person skills: [moving] {
 	object working;
 	district myDistrict;
 	list<object> playing;
-	int engagementTime;
 	
 	aspect base {
 		draw circle(10) color: #red;
@@ -463,20 +461,17 @@ species person skills: [moving] {
 		//					write cycle;
 	//					write 'killer: '+one_of(killer)+' me: '+self.name;
 						if (myself.isSocialworker) { 
-							myself.engagement <- myself.engagement - changeIfSocialMeetKiller * myself.startEngagement;	
-							//for full simulations: 5000, for part(100 cycles): 500, for the shortest(10 cycle): 50
-							if (self.engagementTime < 5000) { 
+							myself.engagement <- myself.engagement - changeIfSocialMeetKiller * myself.startEngagement;							
+							if (self.engagement <= myself.engagement) { 
 								//at the beginning, killer want to kill every social workers
 								self.engagement <- self.engagement + changeIfIamKiller * self.startEngagement; 
-							} 
-							//for full simulations: 15000, for part(100 cycles): 1500, for the shortest(10 cycle): 150
-							else if (self.engagementTime > 15000) { //
+							} 						
+							else if (self.engagement > myself.engagement) { //
 								//later, when he won, his interest to win falls
 								self.engagement <- self.engagement - (changeIfIamKiller / 2) * self.startEngagement;
 							}
 	//						write 'person' + myself.name + ' param: ' + myself.engagementTime + ' cycle: ' + cycle;
 							//times when "met" social worker
-							self.engagementTime <- self.engagementTime + 1;
 						}
 						else if (myself.isKiller) {
 							myself.engagement <- myself.engagement + 2 * changeIfIamKiller * myself.startEngagement;
@@ -484,16 +479,14 @@ species person skills: [moving] {
 						}
 						else {
 							myself.engagement <- myself.engagement + changeIfNormalMeetKiller * myself.startEngagement;
-							if (self.engagementTime < 500) { 
+							if (self.engagement <= myself.engagement) { 
 								//at the beginning, killer want to kill every social workers
 								self.engagement <- self.engagement + changeIfIamKiller * self.startEngagement; 
 							} 
-							//for full simulations: 15000, for part(100 cycles): 1500, for the shortest(10 cycle): 150
-							else if (self.engagementTime > 1500) { //
+							else if (self.engagement > myself.engagement) { //
 								//later, when he won, his interest to win falls
 								self.engagement <- self.engagement - (changeIfIamKiller / 2) * self.startEngagement;
 							}
-							self.engagementTime <- self.engagementTime + 1;
 						}
 //					}
 //				}
@@ -505,13 +498,13 @@ species person skills: [moving] {
 //		write 'cycle: ' + cycle + ' currentHour: ' + currentHour + ' currentDay: ' + currentDay;
 //	}
 	
-	reflex save_person when: cycle = 96 or cycle = 672 or cycle = 1344 or cycle = 2688 {
+	reflex save_person when: cycle = 0 or cycle = 96 or cycle = 672 or cycle = 1344 or cycle = 2688 {
 //		string fileName <- "output/firstCSV_cycle" + cycle + ".csv";
 //		string fileName2 <- "output/allAgents_cycle" + cycle + ".csv";
 //		string fileName3 <- "output/objective_cycle" + cycle + ".csv";
 //		string fileName4 <- "output/speciesOf2_cycle" + cycle + ".csv";
 //		string fileName5 <- "output/withKiller2ToMEMod10Divide_cycle" + cycle + ".csv";
-		string fileName5 <- "output/NOWiscorrectKiller_cycle" + cycle + ".csv";
+		string fileName5 <- "output/CorrectWeekendCorrectKiller_cycle" + cycle + ".csv";
 		
 //		save [self, self.age, self.numOfChildren, self.wealth, self.cultural, 
 //			self.sporty, self.altruism, self.identity, self.myDistrict, 
